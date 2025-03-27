@@ -5,15 +5,15 @@ services:
     restart: unless-stopped
     environment:
       - USE_OLLAMA_DOCKER=False
-      - OLLAMA_BASE_URL=http://192.168.31.179:11434
+      - OLLAMA_BASE_URL=http://your-ollama-host:11434
       - ENABLE_OPENAI_API=True
       - OPENAI_API_BASE_URL=https://openrouter.ai/api/v1
-      - OPENAI_API_KEY=$OPENROUTER_API_KEY
+      - OPENAI_API_KEY=${OPENROUTER_API_KEY}
       - ENABLE_AUTOCOMPLETE_GENERATION=False
       - ENABLE_EVALUATION_ARENA_MODELS=False
       - RAG_OPENAI_API_BASE_URL=https://api.openai.com/v1
       - RAG_EMBEDDING_ENGINE=openai
-      - RAG_OPENAI_API_KEY=$OPENAI_API_KEY
+      - RAG_OPENAI_API_KEY=${OPENAI_API_KEY}
       - RAG_EMBEDDING_MODEL=text-embedding-3-small
       - CHROMA_HTTP_HOST=chroma
       - ENABLE_RAG_WEB_SEARCH=True
@@ -22,7 +22,7 @@ services:
       - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10
       - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
     volumes:
-      - /home/tofu/docker/open-webui:/app/backend/data
+      - ${DATA_DIR}/open-webui:/app/backend/data
     networks:
       - openwebui
   
@@ -32,8 +32,8 @@ services:
     ports:
       - "4000:4000"
     environment:
-        LITELLM_MASTER_KEY: $LITELLM_MASTER_KEY
-        LITELLM_SALT_KEY: $LITELLM_SALT_KEY
+        LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+        LITELLM_SALT_KEY: ${LITELLM_SALT_KEY}
         DATABASE_URL: "postgresql://llmproxy:dbpassword9090@litellm_db:5432/litellm"
         STORE_MODEL_IN_DB: "True"
     networks:
@@ -61,7 +61,7 @@ services:
     container_name: chroma
     image: chromadb/chroma:latest
     volumes:
-      - /home/tofu/docker/volumes/chroma:/chroma/chroma
+      - ${DATA_DIR}/chroma:/chroma/chroma
     restart: unless-stopped
     networks:
       - openwebui
@@ -74,7 +74,7 @@ services:
     networks:
       - openwebui
     environment:
-      - TUNNEL_TOKEN=$TUNNEL_TOKEN
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 
   searxng:
     container_name: searxng
@@ -82,9 +82,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /home/tofu/docker/searxng:/etc/searxng:rw
+      - ${DATA_DIR}/searxng:/etc/searxng:rw
     environment:
-      - SEARXNG_HOSTNAME=$SEARXNG_HOSTNAME
+      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME}
     restart: unless-stopped
     cap_drop:
       - ALL
@@ -107,7 +107,7 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
-      - /home/tofu/docker/caddyfile/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${DATA_DIR}/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data:rw
       - caddy-config:/config:rw
     environment:

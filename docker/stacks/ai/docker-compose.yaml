@@ -14,7 +14,7 @@ services:
         - WHISPER_BEAM=1 #optional
         - WHISPER_LANG=es 
       volumes:
-        - /home/tofu/docker/whisper/data:/config
+        - ${DATA_DIR}/whisper:/config
       ports:
         - 10300:10300
       restart: unless-stopped
@@ -35,7 +35,7 @@ services:
       - PIPER_SPEAKER=0 #optional
       - PIPER_PROCS=1 #optional
     volumes:
-      - /home/tofu/piper/data:/config
+      - ${DATA_DIR}/piper:/config
     ports:
       - 10200:10200
     restart: unless-stopped

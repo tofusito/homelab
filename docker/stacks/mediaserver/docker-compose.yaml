@@ -1,0 +1,186 @@
+services:
+  gluetun:
+    image: gluetun-custom:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - LOG_LEVEL=debug
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_PORT_FORWARDING=on
+      - PORT_FORWARD_ONLY=on
+      - SERVER_COUNTRIES=Spain
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - PROTOCOL=udp
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+      - VPN_PORT_FORWARDING_UP_COMMAND=python3 /gluetun/forward_port_torrent.py {{PORTS}}
+    volumes:
+      - ${DATA_DIR}/gluetun:/gluetun
+    ports:
+      - 7878:7878 # radarr
+      - 8888:8888 # qbittorrent
+      - 8989:8989 # sonarr
+      - 9696:9696 # prowlarr
+      - 6881:6881
+      - 6881:6881/udp
+      - 3000:3000
+      - 9091:9091
+    restart: unless-stopped
+    networks:
+      - mediaserver
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+      - WEBUI_PORT=8888
+      - QBITTORRENT_WEBUI_LISTEN_ADDRESS=0.0.0.0  # Escuchar en todas las interfaces
+    volumes:
+      - ${DATA_DIR}/qbittorrent:/config
+      - ${DATA_DIR}/media/downloads:/Downloads
+    restart: unless-stopped
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"  # Hereda la red del contenedor gluetun
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/ || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - VERSION=docker
+    volumes:
+      - ${DATA_DIR}/plex:/config
+      - ${DATA_DIR}/media/MediaServer:/MediaServer
+    restart: unless-stopped
+
+  tautulli:
+    image: ghcr.io/tautulli/tautulli:v2.15.1
+    container_name: tautulli
+    restart: unless-stopped
+    volumes:
+      - ${DATA_DIR}/tautulli:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - 8181:8181
+    networks:
+      - mediaserver
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ${DATA_DIR}/sonarr:/config
+      - ${DATA_DIR}/media/MediaServer/Series:/MediaServer/Series
+      - ${DATA_DIR}/media/downloads:/Downloads
+    network_mode: "service:gluetun"            
+    restart: unless-stopped
+    
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ${DATA_DIR}/radarr:/config
+      - ${DATA_DIR}/media/MediaServer/Movies:/MediaServer/Movies
+      - ${DATA_DIR}/media/downloads:/Downloads
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+      
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ${DATA_DIR}/prowlarr:/config
+    restart: unless-stopped
+
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ${DATA_DIR}/overseerr:/config
+    ports:
+      - 5055:5055
+    networks:
+      - mediaserver
+    restart: unless-stopped
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ${DATA_DIR}/bazarr:/config
+      - ${DATA_DIR}/media/MediaServer:/MediaServer
+    ports:
+      - 6767:6767
+    networks:
+      - mediaserver         
+    restart: unless-stopped
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ${DATA_DIR}/jellyfin:/config
+      - ${DATA_DIR}/media/MediaServer:/MediaServer
+    restart: unless-stopped
+
+  cloudflare:
+    container_name: cloudflare-media
+    image: cloudflare/cloudflared:2024.12.1
+    restart: unless-stopped
+    command: tunnel run
+    networks:
+      - mediaserver
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+
+networks:
+  mediaserver:
+    driver: bridge
+    name: mediaserver

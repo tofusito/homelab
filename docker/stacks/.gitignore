@@ -1,0 +1,19 @@
+# Ignorar todos los archivos .env (contienen credenciales)
+**/.env
+
+# Ignorar directorios de datos
+**/data/
+
+# Ignorar directorios de medios
+**/media/
+**/Downloads/
+**/MediaServer/
+
+# Logs
+*.log
+
+# Otros archivos temporales o de configuración local
+**/.DS_Store
+**/.directory
+**/*.swp
+**/*.swo 
