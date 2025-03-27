@@ -197,3 +197,5 @@ This project is distributed under the MIT License. See the LICENSE file for more
 - The Docker and Docker Compose teams
 - All the open-source projects that make this homelab possible
 - The homelab community for inspiration and support 
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/tofusito)
