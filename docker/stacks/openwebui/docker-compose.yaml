@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       - USE_OLLAMA_DOCKER=False
-      - OLLAMA_BASE_URL=http://your-ollama-host:11434
+      - OLLAMA_BASE_URL=http://${OLLAMA_HOST}:11434
       - ENABLE_OPENAI_API=True
       - OPENAI_API_BASE_URL=https://openrouter.ai/api/v1
       - OPENAI_API_KEY=${OPENROUTER_API_KEY}

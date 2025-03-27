@@ -1,102 +1,199 @@
-# Docker Homelab Stacks
+# 🏠 Docker Homelab Stacks
 
-Este repositorio contiene una colección de stacks de Docker Compose para un homelab personal. Cada stack está organizado en su propio directorio y contiene un archivo `docker-compose.yaml` y opcionalmente un archivo `.env.example`.
+This repository contains a collection of Docker Compose stacks for a personal homelab. Each stack is organized in its own directory and includes a `docker-compose.yaml` file and an optional `.env.example` file.
 
-## Stacks disponibles
+## 🧩 Available Stacks
 
-- **ai**: Servicios de procesamiento de voz (reconocimiento y síntesis)
-- **entrypoint**: Servicios de entrada y gestión de acceso
-- **mediaserver**: Conjunto completo de servicios para gestionar y servir contenido multimedia
-- **openwebui**: Interfaz web para servicios AI/LLM
-- **theroompro**: Servicios adicionales
+- **🎙️ AI** - Voice processing services:
+  - `faster-whisper`: Speech-to-text transcription service (Spanish)
+  - `piper`: Text-to-speech synthesis service
 
-## Requisitos previos
+- **🚪 Entrypoint** - Access management services:
+  - `cloudflare`: Cloudflare tunnel for secure remote access
+  - `cloudflare-ddns`: Dynamic DNS updates for Cloudflare domains
+  - `twingate_connector`: Secure network access solution
+  - `homarr`: Dashboard for your services
+  - `dash`: System monitoring dashboard
+  - `uptime-kuma`: Uptime monitoring
+  - `wireguard`: VPN service
 
-- Docker y Docker Compose instalados
-- Espacio suficiente en disco para almacenar los datos
-- Conocimientos básicos de Docker y networking
+- **🎬 Mediaserver** - Complete media management solution:
+  - `gluetun`: VPN container with port forwarding
+  - `qbittorrent`: Torrent client
+  - `plex` & `jellyfin`: Media servers
+  - `sonarr`: TV series management
+  - `radarr`: Movie management
+  - `prowlarr`: Indexer manager
+  - `overseerr`: Media request interface
+  - `bazarr`: Subtitle management
+  - `tautulli`: Plex monitoring
+  - `cloudflare`: External access tunnel
 
-## Configuración
+- **🌐 OpenWebUI** - Web interface for AI/LLM services:
+  - `open-webui`: Main interface for LLMs
+  - `litellm`: Proxy for LLM APIs
+  - `chroma`: Vector database
+  - `searxng`: Meta search engine
+  - `caddy`: Web server
+  - `redis`: In-memory database
 
-1. Clona este repositorio:
+- **🏢 TheRoomPro** - Additional services
+
+## 🧰 Prerequisites
+
+- 🐳 Docker and Docker Compose installed
+- 💽 Sufficient disk space for storing data
+- 🔌 Basic knowledge of Docker and networking
+- 🌐 Internet connection for pulling images
+
+## ⚙️ Configuration
+
+1. 📥 Clone this repository:
    ```bash
-   git clone https://github.com/tu-usuario/homelab-docker-stacks.git
+   git clone https://github.com/your-username/homelab-docker-stacks.git
    cd homelab-docker-stacks
    ```
 
-2. Para cada stack que quieras usar:
-   - Copia el archivo `.env.example` a `.env`
-   - Edita el archivo `.env` con tus propias credenciales y configuraciones
-   - Define la variable `DATA_DIR` para indicar dónde se almacenarán los datos (importante para Portainer)
+2. 🔧 For each stack you want to use:
+   - Copy the `.env.example` file to `.env`
+   - Edit the `.env` file with your own credentials and configurations
+   - Define the `DATA_DIR` variable to specify where the data will be stored (important for Portainer)
    ```bash
    cd docker/stacks/mediaserver
    cp .env.example .env
    nano .env
    ```
 
-   Ejemplo de configuración en .env:
+   Example `.env` configuration:
    ```
    DATA_DIR=/path/to/your/data
    TUNNEL_TOKEN=your_cloudflare_tunnel_token
    ...
    ```
 
-3. Creación de directorios:
-   - Todos los datos se almacenarán en la ruta especificada en la variable `DATA_DIR`
-   - Los directorios se crearán automáticamente si no existen
+3. 📁 Directory Creation:
+   - All data will be stored in the path specified in the `DATA_DIR` variable
+   - Directories will be created automatically if they don't exist
+   - Make sure the user running the containers has write permissions to this directory
 
-## Uso con Portainer
+## 🐋 Usage with Portainer
 
-Cuando uses estos stacks con Portainer:
+When using these stacks with Portainer:
 
-1. En la sección de "Stacks", crea un nuevo stack
-2. Sube el archivo `docker-compose.yaml` o apunta al repositorio git
-3. En la sección de variables de entorno, asegúrate de definir `DATA_DIR` con la ruta absoluta donde quieres almacenar los datos
-4. Esta configuración hace fácil gestionar los volúmenes sin tener que preocuparte por rutas relativas
+1. In the "Stacks" section, create a new stack
+2. Upload the `docker-compose.yaml` file or point to the git repository
+3. In the environment variables section, make sure to define `DATA_DIR` with the absolute path where you want to store the data
+4. This configuration makes it easy to manage volumes without worrying about relative paths
+5. The same stack definition can be used across different hosts by just changing the `DATA_DIR` variable
 
-## Uso
+## 🚀 Usage
 
-Para iniciar un stack:
+To start a stack:
 
 ```bash
 cd docker/stacks/mediaserver
 docker-compose up -d
 ```
 
-Para detener un stack:
+To stop a stack:
 
 ```bash
 cd docker/stacks/mediaserver
 docker-compose down
 ```
 
-## Estructura de directorios
+To view logs:
 
-Cada stack sigue una estructura similar, pero los datos se almacenan según la variable `DATA_DIR`:
+```bash
+docker-compose logs -f [service_name]
+```
+
+To update a stack:
+
+```bash
+docker-compose pull
+docker-compose up -d
+```
+
+## 📂 Directory Structure
+
+Each stack follows a similar structure, but the data is stored according to the `DATA_DIR` variable:
 
 ```
 $DATA_DIR/
-├── open-webui/      # Datos de Open WebUI
-├── chroma/          # Datos de Chroma DB
-├── plex/            # Configuración de Plex
-├── sonarr/          # Configuración de Sonarr
-└── ...              # Otros servicios
+├── open-webui/      # Open WebUI data
+├── chroma/          # Chroma DB data
+├── plex/            # Plex configuration
+├── sonarr/          # Sonarr configuration
+├── whisper/         # Whisper configuration
+├── piper/           # Piper configuration
+├── homarr/          # Homarr configuration
+├── wireguard/       # WireGuard configuration
+└── ...              # Other services
 ```
 
-## Notas de seguridad
+## 🔒 Security Notes
 
-- **NUNCA** subas tus archivos `.env` con credenciales reales a un repositorio público
-- Usa siempre los archivos `.env.example` para la documentación
-- Asegúrate de que tus volúmenes de Docker estén protegidos adecuadamente
+- ⚠️ **NEVER** upload your `.env` files with real credentials to a public repository
+- 📝 Always use `.env.example` files for documentation
+- 🛡️ Make sure your Docker volumes are properly protected
+- 🔑 Use strong passwords for all services
+- 🔐 Consider using a separate network for sensitive services
+- 🧪 Regularly test your security configurations
 
-## Servicios VPN
+## 🌍 VPN Services
 
-Algunos servicios están configurados para funcionar a través de una VPN (gluetun). Asegúrate de configurar correctamente las variables de entorno relacionadas con tu proveedor de VPN.
+Some services are configured to work through a VPN (gluetun):
 
-## Contribuciones
+- Ensures your traffic is encrypted and private
+- Provides port forwarding for remote access
+- Make sure to properly configure environment variables related to your VPN provider
+- Supported VPN providers include ProtonVPN, NordVPN, and others
 
-Las contribuciones son bienvenidas. Por favor, asegúrate de seguir las prácticas de seguridad adecuadas y no incluir información sensible o personal.
+## 🛠️ Advanced Configuration
 
-## Licencia
+### 🔄 Network Configuration
 
-Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo LICENSE para más detalles. 
+The stacks define several Docker networks:
+- `homelab`: General network for most services
+- `mediaserver`: Specific network for media services
+- `ai`: Network for AI/voice services
+- `openwebui`: Network for LLM/web services
+
+External networks:
+- `portainer_bridge`: Used to connect to Portainer services
+
+### 🎛️ Resource Limits
+
+Consider adding resource limits to the services if running on limited hardware:
+
+```yaml
+services:
+  your-service:
+    # ...other config
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+```
+
+## 👥 Contributing
+
+Contributions are welcome! Please ensure you follow these guidelines:
+
+- Follow proper security practices
+- Do not include sensitive or personal information
+- Test your changes before submitting
+- Document your changes clearly
+- Create a pull request with a clear description
+
+## 📜 License
+
+This project is distributed under the MIT License. See the LICENSE file for more details.
+
+## 🙏 Acknowledgements
+
+- The Docker and Docker Compose teams
+- All the open-source projects that make this homelab possible
+- The homelab community for inspiration and support 
