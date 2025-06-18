@@ -16,13 +16,32 @@ services:
       - RAG_OPENAI_API_KEY=${OPENAI_API_KEY}
       - RAG_EMBEDDING_MODEL=text-embedding-3-small
       - CHROMA_HTTP_HOST=chroma
-      - ENABLE_RAG_WEB_SEARCH=True
-      - RAG_WEB_SEARCH_ENGINE=searxng
-      - RAG_WEB_SEARCH_RESULT_COUNT=3
-      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10
-      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
     volumes:
       - ${DATA_DIR}/open-webui:/app/backend/data
+    networks:
+      - openwebui
+      
+  mcpo:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: mcpo
+    command:
+      - "--config"
+      - "/config/mcpo-config.json"
+      - "--port"
+      - "8999"
+      - "--api-key"
+      - ${MCPO_SECRET}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DATA_DIR}/mcpo/mcp:/mcp
+      - ${DATA_DIR}/mcpo/config/mcpo-config.json:/config/mcpo-config.json:ro
+      - ${MEDIA_SERIES_PATH}:/MediaServer/Series
+      - ${MEDIA_MOVIES_PATH}:/MediaServer/Movies
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAPI_MCP_HEADERS=${OPENAPI_MCP_HEADERS}
+    ports:
+      - "8999:8999"
     networks:
       - openwebui
   
@@ -76,78 +95,7 @@ services:
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 
-  searxng:
-    container_name: searxng
-    image: searxng/searxng:latest
-    ports:
-      - "8080:8080"
-    volumes:
-      - ${DATA_DIR}/searxng:/etc/searxng:rw
-    environment:
-      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME}
-    restart: unless-stopped
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
-      - DAC_OVERRIDE
-    networks:
-      - openwebui
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
-
-  caddy:
-    container_name: caddy
-    image: docker.io/library/caddy:2-alpine
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - ${DATA_DIR}/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data:rw
-      - caddy-config:/config:rw
-    environment:
-      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-http://localhost}
-      - SEARXNG_TLS=${LETSENCRYPT_EMAIL:-internal}
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
-
-  redis:
-    container_name: redis
-    image: docker.io/valkey/valkey:8-alpine
-    command: valkey-server --save 30 1 --loglevel warning
-    restart: unless-stopped
-    networks:
-      - openwebui
-    volumes:
-      - valkey-data2:/data
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETGID
-      - SETUID
-      - DAC_OVERRIDE
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
-
 volumes:
-  caddy-data:
-  caddy-config:
-  valkey-data2:
   postgres_data:
     name: litellm_postgres_data
 
