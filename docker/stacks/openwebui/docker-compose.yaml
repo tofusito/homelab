@@ -39,7 +39,6 @@ services:
       - ${MEDIA_MOVIES_PATH}:/MediaServer/Movies
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAPI_MCP_HEADERS=${OPENAPI_MCP_HEADERS}
     ports:
       - "8999:8999"
     networks:
