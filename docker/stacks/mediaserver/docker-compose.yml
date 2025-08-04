@@ -1,6 +1,7 @@
 services:
   gluetun:
     image: gluetun-custom:latest
+    pull_policy: always
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -12,16 +13,16 @@ services:
       - VPN_PORT_FORWARDING=on
       - PORT_FORWARD_ONLY=on
       - SERVER_COUNTRIES=Spain
-      - OPENVPN_USER=${OPENVPN_USER}
-      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - OPENVPN_USER=$OPENVPN_USER
+      - OPENVPN_PASSWORD=$OPENVPN_PASSWORD
+
       - PROTOCOL=udp
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Madrid
       - VPN_PORT_FORWARDING_UP_COMMAND=python3 /gluetun/forward_port_torrent.py {{PORTS}}
     volumes:
-      - ${DATA_DIR}/gluetun:/gluetun
+      - /home/tofu/docker/gluetun:/gluetun
     ports:
       - 7878:7878 # radarr
       - 8888:8888 # qbittorrent
@@ -37,6 +38,7 @@ services:
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
+    pull_policy: always
     container_name: qbittorrent
     environment:
       - PUID=1000
@@ -45,8 +47,8 @@ services:
       - WEBUI_PORT=8888
       - QBITTORRENT_WEBUI_LISTEN_ADDRESS=0.0.0.0  # Escuchar en todas las interfaces
     volumes:
-      - ${DATA_DIR}/qbittorrent:/config
-      - ${DATA_DIR}/media/downloads:/Downloads
+      - /home/tofu/docker/qbittorrent/config:/config
+      - /mnt/IronWolf/Downloads:/Downloads
     restart: unless-stopped
     depends_on:
       - gluetun
@@ -57,18 +59,22 @@ services:
       timeout: 10s
       retries: 3
 
+  
   plex:
     image: lscr.io/linuxserver/plex:latest
+    pull_policy: always
     container_name: plex
     network_mode: host
+    devices:
+      - /dev/dri:/dev/dri
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
       - VERSION=docker
     volumes:
-      - ${DATA_DIR}/plex:/config
-      - ${DATA_DIR}/media/MediaServer:/MediaServer
+      - /home/tofu/docker/plex:/config
+      - /mnt/IronWolf/MediaServer:/MediaServer
     restart: unless-stopped
 
   tautulli:
@@ -76,7 +82,7 @@ services:
     container_name: tautulli
     restart: unless-stopped
     volumes:
-      - ${DATA_DIR}/tautulli:/config
+      -  /home/tofu/docker/tautulli:/config
     environment:
       - PUID=1000
       - PGID=1000
@@ -88,34 +94,37 @@ services:
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
+    pull_policy: always
     container_name: sonarr
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - ${DATA_DIR}/sonarr:/config
-      - ${DATA_DIR}/media/MediaServer/Series:/MediaServer/Series
-      - ${DATA_DIR}/media/downloads:/Downloads
+      - /home/tofu/docker/sonarr:/config
+      - /mnt/IronWolf/MediaServer/Series:/MediaServer/Series
+      - /mnt/IronWolf/Downloads:/Downloads
     network_mode: "service:gluetun"            
     restart: unless-stopped
     
   radarr:
     image: lscr.io/linuxserver/radarr:latest
+    pull_policy: always
     container_name: radarr
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - ${DATA_DIR}/radarr:/config
-      - ${DATA_DIR}/media/MediaServer/Movies:/MediaServer/Movies
-      - ${DATA_DIR}/media/downloads:/Downloads
+      - /home/tofu/docker/radarr:/config
+      - /mnt/IronWolf/MediaServer/Movies:/MediaServer/Movies
+      - /mnt/IronWolf/Downloads:/Downloads
     restart: unless-stopped
     network_mode: "service:gluetun"
       
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
+    pull_policy: always
     container_name: prowlarr
     network_mode: "service:gluetun"
     environment:
@@ -123,18 +132,20 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - ${DATA_DIR}/prowlarr:/config
+      - /home/tofu/docker/prowlarr/data:/config
     restart: unless-stopped
+
 
   overseerr:
     image: lscr.io/linuxserver/overseerr:latest
+    pull_policy: always
     container_name: overseerr
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - ${DATA_DIR}/overseerr:/config
+      - /home/tofu/docker/overseerr:/config
     ports:
       - 5055:5055
     networks:
@@ -143,32 +154,57 @@ services:
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
+    pull_policy: always
     container_name: bazarr
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - ${DATA_DIR}/bazarr:/config
-      - ${DATA_DIR}/media/MediaServer:/MediaServer
+      - /home/tofu/docker/bazarr/data:/config
+      - /mnt/IronWolf/MediaServer:/MediaServer
     ports:
       - 6767:6767
     networks:
       - mediaserver         
     restart: unless-stopped
 
-  jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
-    container_name: jellyfin
-    network_mode: host
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-    volumes:
-      - ${DATA_DIR}/jellyfin:/config
-      - ${DATA_DIR}/media/MediaServer:/MediaServer
-    restart: unless-stopped
+  # jellyfin:
+  #   image: lscr.io/linuxserver/jellyfin:latest
+  #   container_name: jellyfin
+  #   network_mode: host
+  #   devices:
+  #     - /dev/dri:/dev/dri
+  #   #networks:
+  #   #  - mediaserver
+  #   ports:
+  #     - 8096:8096
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=Etc/UTC
+  #   volumes:
+  #     - /home/tofu/docker/jellyfin:/config
+  #     - /mnt/IronWolf/MediaServer:/MediaServer
+  #   restart: unless-stopped
+
+  # jellyseerr:
+  #   image: ghcr.io/fallenbagel/jellyseerr:latest
+  #   container_name: jellyseerr
+  #   environment:
+  #     - JELLYFIN_URL=http://jellyfin:8096
+  #     - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
+  #     - DB_TYPE=sqlite
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=Europe/Madrid
+  #   volumes:
+  #     - /home/tofu/docker/jellyseerr/config:/app/config
+  #   ports:
+  #     - 5056:5055
+  #   networks:
+  #     - mediaserver
+  #   restart: unless-stopped
 
   cloudflare:
     container_name: cloudflare-media
@@ -178,7 +214,7 @@ services:
     networks:
       - mediaserver
     environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+      - TUNNEL_TOKEN=$TUNNEL_TOKEN
 
 networks:
   mediaserver:

@@ -1,0 +1,115 @@
+networks:
+  ai:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: litellm_postgres_data
+
+services:
+  cloudflare:
+    container_name: cloudflare_ai
+    image: cloudflare/cloudflared:latest
+    pull_policy: always
+    restart: unless-stopped
+    command: tunnel run
+    networks:
+      - ai
+    environment:
+      - TUNNEL_TOKEN=$TUNNEL_TOKEN
+
+
+  faster-whisper:
+      image: lscr.io/linuxserver/faster-whisper:latest
+      pull_policy: always
+      container_name: faster-whisper
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Etc/UTC
+        - WHISPER_MODEL=base
+        - WHISPER_BEAM=1 #optional
+        - WHISPER_LANG=es 
+      volumes:
+        - /home/tofu/docker/whisper/data:/config
+      ports:
+        - 10300:10300
+      restart: unless-stopped
+      networks:
+        - ai
+      healthcheck:
+        test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/10300' || exit 1"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 30s
+
+  piper:
+    image: lscr.io/linuxserver/piper:latest
+    pull_policy: always
+    container_name: piper
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - PIPER_VOICE=es_ES-sharvard-medium
+      - PIPER_LENGTH=1.0 #optional
+      - PIPER_NOISE=0.667 #optional
+      - PIPER_NOISEW=0.333 #optional
+      - PIPER_SPEAKER=0 #optional
+      - PIPER_PROCS=1 #optional
+    volumes:
+      - /home/tofu/docker/piper/data:/config
+    ports:
+      - 10200:10200
+    restart: unless-stopped
+    networks:
+      - ai
+    healthcheck:
+        test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/10200' || exit 1"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 30s
+
+  litellm:
+    container_name: litellm
+    image: ghcr.io/berriai/litellm:main-latest
+    pull_policy: always
+    ports:
+      - "4000:4000"
+    environment:
+        LITELLM_MASTER_KEY: $LITELLM_MASTER_KEY
+        LITELLM_SALT_KEY: $LITELLM_SALT_KEY
+        DATABASE_URL: "postgresql://llmproxy:dbpassword9090@litellm_db:5432/litellm"
+        STORE_MODEL_IN_DB: "True"
+    networks:
+      - ai
+    depends_on:
+      litellm_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/4000' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+  litellm_db:
+    container_name: litellm_db
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: llmproxy
+      POSTGRES_PASSWORD: dbpassword9090
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persists Postgres data across container restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ai
