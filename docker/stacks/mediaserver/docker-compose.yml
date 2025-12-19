@@ -1,7 +1,7 @@
 services:
   gluetun:
     image: gluetun-custom:latest
-    pull_policy: always
+    pull_policy: never
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -15,7 +15,6 @@ services:
       - SERVER_COUNTRIES=Spain
       - OPENVPN_USER=$OPENVPN_USER
       - OPENVPN_PASSWORD=$OPENVPN_PASSWORD
-
       - PROTOCOL=udp
       - PUID=1000
       - PGID=1000
@@ -37,6 +36,8 @@ services:
       - mediaserver
 
   qbittorrent:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: lscr.io/linuxserver/qbittorrent:latest
     pull_policy: always
     container_name: qbittorrent
@@ -48,7 +49,7 @@ services:
       - QBITTORRENT_WEBUI_LISTEN_ADDRESS=0.0.0.0  # Escuchar en todas las interfaces
     volumes:
       - /home/tofu/docker/qbittorrent/config:/config
-      - /mnt/IronWolf/Downloads:/Downloads
+      - /mnt/evo/Downloads:/Downloads
     restart: unless-stopped
     depends_on:
       - gluetun
@@ -61,6 +62,8 @@ services:
 
   
   plex:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: lscr.io/linuxserver/plex:latest
     pull_policy: always
     container_name: plex
@@ -74,10 +77,30 @@ services:
       - VERSION=docker
     volumes:
       - /home/tofu/docker/plex:/config
-      - /mnt/IronWolf/MediaServer:/MediaServer
+      - /mnt/evo/MediaServer:/MediaServer
+    restart: unless-stopped
+
+  jellyfin:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    image: lscr.io/linuxserver/jellyfin:latest
+    pull_policy: always
+    container_name: jellyfin
+    network_mode: host
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /home/tofu/docker/jellyfin:/config
+      - /mnt/evo/MediaServer:/MediaServer
     restart: unless-stopped
 
   tautulli:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: ghcr.io/tautulli/tautulli:v2.15.1
     container_name: tautulli
     restart: unless-stopped
@@ -93,6 +116,8 @@ services:
       - mediaserver
 
   sonarr:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: lscr.io/linuxserver/sonarr:latest
     pull_policy: always
     container_name: sonarr
@@ -102,12 +127,14 @@ services:
       - TZ=Etc/UTC
     volumes:
       - /home/tofu/docker/sonarr:/config
-      - /mnt/IronWolf/MediaServer/Series:/MediaServer/Series
-      - /mnt/IronWolf/Downloads:/Downloads
+      - /mnt/evo/MediaServer/Series:/MediaServer/Series
+      - /mnt/evo/Downloads:/Downloads
     network_mode: "service:gluetun"            
     restart: unless-stopped
     
   radarr:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: lscr.io/linuxserver/radarr:latest
     pull_policy: always
     container_name: radarr
@@ -117,12 +144,14 @@ services:
       - TZ=Etc/UTC
     volumes:
       - /home/tofu/docker/radarr:/config
-      - /mnt/IronWolf/MediaServer/Movies:/MediaServer/Movies
-      - /mnt/IronWolf/Downloads:/Downloads
+      - /mnt/evo/MediaServer/Movies:/MediaServer/Movies
+      - /mnt/evo/Downloads:/Downloads
     restart: unless-stopped
     network_mode: "service:gluetun"
       
   prowlarr:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: lscr.io/linuxserver/prowlarr:latest
     pull_policy: always
     container_name: prowlarr
@@ -136,16 +165,17 @@ services:
     restart: unless-stopped
 
 
-  overseerr:
-    image: lscr.io/linuxserver/overseerr:latest
+  jellyseerr:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    image: fallenbagel/jellyseerr:latest
     pull_policy: always
-    container_name: overseerr
+    container_name: jellyseerr
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
+      - LOG_LEVEL=debug
+      - TZ=Europe/Madrid
     volumes:
-      - /home/tofu/docker/overseerr:/config
+      - /home/tofu/docker/jellyseerr:/app/config
     ports:
       - 5055:5055
     networks:
@@ -153,6 +183,8 @@ services:
     restart: unless-stopped
 
   bazarr:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     image: lscr.io/linuxserver/bazarr:latest
     pull_policy: always
     container_name: bazarr
@@ -162,53 +194,19 @@ services:
       - TZ=Etc/UTC
     volumes:
       - /home/tofu/docker/bazarr/data:/config
-      - /mnt/IronWolf/MediaServer:/MediaServer
+      - /mnt/evo/MediaServer:/MediaServer
     ports:
       - 6767:6767
     networks:
       - mediaserver         
     restart: unless-stopped
 
-  # jellyfin:
-  #   image: lscr.io/linuxserver/jellyfin:latest
-  #   container_name: jellyfin
-  #   network_mode: host
-  #   devices:
-  #     - /dev/dri:/dev/dri
-  #   #networks:
-  #   #  - mediaserver
-  #   ports:
-  #     - 8096:8096
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=Etc/UTC
-  #   volumes:
-  #     - /home/tofu/docker/jellyfin:/config
-  #     - /mnt/IronWolf/MediaServer:/MediaServer
-  #   restart: unless-stopped
-
-  # jellyseerr:
-  #   image: ghcr.io/fallenbagel/jellyseerr:latest
-  #   container_name: jellyseerr
-  #   environment:
-  #     - JELLYFIN_URL=http://jellyfin:8096
-  #     - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
-  #     - DB_TYPE=sqlite
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=Europe/Madrid
-  #   volumes:
-  #     - /home/tofu/docker/jellyseerr/config:/app/config
-  #   ports:
-  #     - 5056:5055
-  #   networks:
-  #     - mediaserver
-  #   restart: unless-stopped
 
   cloudflare:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     container_name: cloudflare-media
-    image: cloudflare/cloudflared:2024.12.1
+    image: cloudflare/cloudflared:latest
     restart: unless-stopped
     command: tunnel run
     networks:

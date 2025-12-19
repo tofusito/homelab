@@ -1,0 +1,120 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    pull_policy: always
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      - /home/tofu/docker/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    privileged: true
+
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/mosquitto/config:/mosquitto/config
+      - /home/tofu/docker/homeassistant/complements/mosquitto/data:/mosquitto/data
+      - /home/tofu/docker/homeassistant/complements/mosquitto/log:/mosquitto/log
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    environment:
+      - TZ=Europe/Madrid
+    # PRECAUCIÓN: Verifica la ruta de tu dongle Zigbee.
+    # Puede ser /dev/ttyUSB0, /dev/ttyACM0, etc.
+    devices:
+      - /dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_e46a977c6a8eed119ad68354b96ce6f8-if00-port0:/dev/ttyUSB0
+    depends_on:
+      - mosquitto
+
+  matter-server:
+    container_name: matter-server
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    restart: unless-stopped
+    network_mode: host
+    privileged: true # Recomendado mantenerlo para evitar problemas con mDNS
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/matter-server/data:/data
+      - /run/dbus:/run/dbus:ro
+
+  matter-bridge:
+    container_name: matter-bridge
+    image: ghcr.io/t0bst4r/home-assistant-matter-hub:latest
+    restart: unless-stopped
+    # Matter Bridge también se beneficia de la red host para publicidad
+    network_mode: host
+    environment:
+      # Si usas red host, localhost:8123 debería funcionar
+      - HAMH_HOME_ASSISTANT_URL=http://localhost:8123
+      - HAMH_HOME_ASSISTANT_ACCESS_TOKEN=PON_AQUI_TU_TOKEN_DE_LARGA_DURACION
+      - LOG_LEVEL=info
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/matter-bridge/data:/data
+
+  ring-mqtt:
+    container_name: ring-mqtt
+    image: tsightler/ring-mqtt
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/ring-mqtt/data:/data
+    environment:
+      - MQTTHOST=mosquitto
+      - MQTTPORT=1883
+      - MQTTUSER=
+      - MQTTPASSWORD=
+      # Si tienes token de refresco, descomenta y ponlo aquí, sino revisa logs
+      # - RINGTOKEN=tu_token_aqui
+    depends_on:
+      - mosquitto
+
+  scrypted:
+    container_name: scrypted
+    image: ghcr.io/koush/scrypted:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION=$SCRYPTED_TOKEN
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - /home/tofu/docker/scrypted/config:/server/volume
+      - /dev/dri:/dev/dri
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  cloudflare:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    container_name: cloudflare-hass
+    network_mode: host
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=$TUNNEL_TOKEN
+
+
+networks:
+  homeassistant:
+    driver: bridge
+    name: homeassistant
