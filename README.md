@@ -130,6 +130,24 @@ This homelab provides a complete self-hosted environment with:
 - **Duplicati**: Multi-backend backup solution
 - **Portainer Backup**: Automated backups of Portainer configuration
 
+## 🐳 Custom Images
+
+The repository includes configuration and build scripts for custom Docker images used in the stacks:
+
+### Portainer Auto Backup (`docker/images/portainer-backup`)
+A custom image based on Alpine Linux designed to automate Portainer backups.
+- **Features**: 
+  - Automated weekly backups via Cron
+  - Secure API authentication
+  - Auto-rotation of old backups (keeps last 7 days)
+  - Integration with Portainer API
+
+### Gluetun Custom (`docker/images/gluetun`)
+Extended version of the official Gluetun VPN client.
+- **Features**:
+  - Includes Python3 for custom scripting
+  - **Port Forwarding Script**: Custom script to handle VPN port forwarding logic for torrent clients
+
 ## 🚀 Deployment
 
 ### Prerequisites
@@ -143,6 +161,9 @@ This homelab provides a complete self-hosted environment with:
 ```
 /home/tofu/git/homelab/
 ├── docker/
+│   ├── images/              # Custom Docker images source
+│   │   ├── gluetun/         # Custom Gluetun build
+│   │   └── portainer-backup/# Backup tool build
 │   └── stacks/
 │       ├── ai/              # AI Services (LiteLLM, Whisper, etc.)
 │       ├── backups/         # Backup tools (Duplicati)
@@ -170,4 +191,4 @@ This homelab provides a complete self-hosted environment with:
 
 **Last Updated**: December 2025
 **Maintainer**: Tofu
-**Version**: 4.0.0 (Unified Homelab Repository)
+**Version**: 4.1.0 (Added Custom Images Support)
