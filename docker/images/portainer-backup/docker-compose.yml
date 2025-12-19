@@ -1,0 +1,20 @@
+services:
+  portainer-backup:
+    image: portainer-auto-backup
+    container_name: portainer-backup
+    restart: unless-stopped
+    volumes:
+      # Mapeo del directorio local donde se guardarán los backups
+      - /home/tofu/backups/portainer:/backups
+    environment:
+      - PORTAINER_URL=http://portainer:9000/api
+      - PORTAINER_USER=admin
+      # IMPORTANTE: Reemplaza esto con tu contraseña real de Portainer
+      - PORTAINER_PASS=TU_PASSWORD_REAL
+    networks:
+      - portainer_bridge
+
+networks:
+  portainer_bridge:
+    external: true
+
