@@ -1,5 +1,7 @@
 services:
   cloudflare:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     container_name: cloudflare
     image: cloudflare/cloudflared:latest
     pull_policy: always
@@ -11,7 +13,6 @@ services:
       - portainer_bridge
     environment:
       - TUNNEL_TOKEN=$TUNNEL_TOKEN
-
 
   cloudflare-ddns:
     container_name: cloudflare-ddns
@@ -25,12 +26,22 @@ services:
     security_opt: [no-new-privileges:true]
     environment:
       - CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN
-      - DOMAINS=vpn.tofusito.org
+      - DOMAINS=vpn.tofusito.org,jelly.tofusito.org
       - PROXIED=false
       - IP6_PROVIDER=none
 
-
-
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Madrid
+      - WATCHTOWER_CLEANUP=true                                        
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_SCHEDULE=10 21 * * *
+      - WATCHTOWER_LABEL_ENABLE=true
       
   uptime-kuma:
     container_name: uptime-kuma
@@ -67,8 +78,6 @@ services:
     sysctls:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
-
-
 
 networks:
   homelab:

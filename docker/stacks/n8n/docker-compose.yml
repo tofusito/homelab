@@ -1,34 +1,5 @@
 services:
-  traefik:
-    container_name: traefik
-    image: "traefik:latest"
-    pull_policy: always
-    restart: always
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - traefik_data:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - n8n
+
 
   n8n:
     container_name: n8n
@@ -38,21 +9,13 @@ services:
     ports:
       - "127.0.0.1:5678:5678"
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      - traefik.http.routers.n8n.tls=true
-      - traefik.http.routers.n8n.entrypoints=web,websecure
-      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
-      - traefik.http.middlewares.n8n.headers.SSLRedirect=true
-      - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
-      - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
-      - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
-      - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
-      - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
-      - traefik.http.middlewares.n8n.headers.STSPreload=true
-      - traefik.http.routers.n8n.middlewares=n8n@docker
+      - com.centurylinklabs.watchtower.enable=true
     environment:
+      - N8N_TRUST_PROXY=true
+      - N8N_TRUSTED_PROXIES=loopback,linklocal,uniquelocal,127.0.0.1/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - DB_SQLITE_POOL_SIZE=5
+      - N8N_RUNNERS_ENABLED=true
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
@@ -68,34 +31,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    depends_on:
-      - postgres
+
     networks:
       - n8n
       - portainer_bridge
-      - mediaserver
-      - openwebui_openwebui
 
-  postgres:
-    image: postgres:15-alpine
-    pull_policy: always
-    container_name: postgres-n8n
+  mcp-proxy:
+    container_name: mcp-proxy
+    image: ghcr.io/tbxark/mcp-proxy:latest
     restart: unless-stopped
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    volumes:
-      - postgres_n8n_data:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432"  # Solo localhost por seguridad
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - 9090:9090
     networks:
       - n8n
+    environment:
+      SSE_URL: ${HA_URL}
+      API_ACCESS_TOKEN: ${HA_TOKEN}
+    volumes:
+      - /home/tofu/docker/mcp-proxy/config.json:/config/config.json:ro
 
   cloudflare:
     container_name: cloudflare_n8n
@@ -103,12 +56,6 @@ services:
     pull_policy: always
     restart: unless-stopped
     command: tunnel --no-autoupdate run
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://n8n:5678 || exit 1"]
-      interval: 60s
-      timeout: 15s
-      retries: 3
-      start_period: 30s
     depends_on:
       - n8n
     networks:
@@ -126,8 +73,4 @@ networks:
     driver: bridge
     name: n8n
   portainer_bridge:
-    external: true
-  mediaserver:
-    external: true
-  openwebui_openwebui:
     external: true

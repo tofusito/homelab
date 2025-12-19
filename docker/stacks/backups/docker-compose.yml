@@ -1,0 +1,38 @@
+services:
+  duplicati:
+    image: lscr.io/linuxserver/duplicati:latest
+    container_name: duplicati
+    environment:
+      - PUID=1000  # ID de tu usuario 'tofu' (usa el comando `id` para confirmar)
+      - PGID=1000  # ID de tu grupo
+      - TZ=Europe/Madrid # O tu zona horaria
+      - CLI_ARGS= # Argumentos extra si los necesitas
+      - SETTINGS_ENCRYPTION_KEY=${SETTINGS_ENCRYPTION_KEY}
+      - DUPLICATI__WEBSERVICE_PASSWORD=${DUPLICATI__WEBSERVICE_PASSWORD}
+    volumes:
+      # Donde Duplicati guarda su base de datos y config
+      - /home/tofu/docker/duplicati/config:/config
+      # La carpeta que quieres respaldar (Todo tu home)
+      - /home/tofu:/source:ro
+    ports:
+      - 8200:8200
+    restart: unless-stopped
+
+  portainer-backup:
+    image: portainer-auto-backup:latest
+    container_name: portainer-backup
+    restart: unless-stopped
+    volumes:
+      # Mapeo del directorio local donde se guardarán los backups
+      - /home/tofu/backups/portainer:/backups
+    environment:
+      - PORTAINER_URL=http://portainer:9000/api
+      - PORTAINER_USER=admin
+      # IMPORTANTE: Reemplaza esto con tu contraseña real de Portainer
+      - PORTAINER_PASS=${PORTAINER_PASS}
+    networks:
+      - portainer_bridge
+
+networks:
+  portainer_bridge:
+    external: true
