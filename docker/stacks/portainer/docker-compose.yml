@@ -1,0 +1,21 @@
+services:
+  cloudflare-main:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    container_name: cloudflare-main
+    image: cloudflare/cloudflared:latest
+    pull_policy: always
+    restart: unless-stopped
+    command: tunnel run
+    networks:
+      - portainer
+      - portainer_bridge
+    environment:
+      - TUNNEL_TOKEN=$TUNNEL_TOKEN
+
+networks:
+  portainer:
+    driver: bridge
+    name: portainer
+  portainer_bridge:
+    external: true

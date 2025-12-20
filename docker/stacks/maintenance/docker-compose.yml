@@ -1,14 +1,14 @@
 services:
-  cloudflare:
+  cloudflare-maintenance:
     labels:
       - com.centurylinklabs.watchtower.enable=true
-    container_name: cloudflare
+    container_name: cloudflare-maintenance
     image: cloudflare/cloudflared:latest
     pull_policy: always
     restart: unless-stopped
     command: tunnel run
     networks:
-      - homelab
+      - maintenance
       - mediaserver
       - portainer_bridge
     environment:
@@ -37,13 +37,13 @@ services:
       - 3002:3001
     restart: unless-stopped
     networks:
-      - homelab
+      - maintenance
       - mediaserver
 
 networks:
-  homelab:
+  maintenance:
     driver: bridge
-    name: homelab
+    name: maintenance
   portainer_bridge:
     external: true
   mediaserver:

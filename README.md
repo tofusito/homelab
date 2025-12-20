@@ -16,8 +16,8 @@ This homelab provides a complete self-hosted environment with:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Infrastructure │    │   VPN Services  │    │   Media Server  │
-│    (entrypoint)  │    │      (vpn)      │    │   (mediaserver) │
+│   Maintenance   │    │   VPN Services  │    │   Media Server  │
+│  (maintenance)  │    │      (vpn)      │    │   (mediaserver) │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
 │ • Cloudflare    │    │ • WireGuard     │    │ • Gluetun VPN   │
 │ • Uptime-Kuma   │    │ • Cloudflare-DDNS│   │ • qBittorrent   │
@@ -40,7 +40,7 @@ This homelab provides a complete self-hosted environment with:
 │     (nginx)     │    │   Management    │
 ├─────────────────┤    ├─────────────────┤
 │ • Nginx Proxy   │    │ • Portainer CE  │
-│   Manager       │    │ • Web Interface │
+│   Manager       │    │ • Cloudflare    │
 │                 │    │ • Auto-updates  │
 └─────────────────┘    └─────────────────┘
 ```
@@ -88,7 +88,7 @@ This homelab provides a complete self-hosted environment with:
 | PostgreSQL | Database for LiteLLM | Internal only | PostgreSQL check |
 | Cloudflare | External tunnel access | - | None (minimal) |
 
-### Infrastructure (entrypoint)
+### Maintenance Services (maintenance)
 **Purpose**: Core infrastructure and monitoring
 
 | Service | Description | External Access | Restart Policy |
@@ -129,6 +129,10 @@ This homelab provides a complete self-hosted environment with:
 ### Proxy & Web (nginx)
 **Purpose**: Reverse proxy management
 - **Nginx Proxy Manager**: Easy UI for managing reverse proxy hosts and SSL certificates
+
+### Portainer Access (portainer)
+**Purpose**: Secured access to Portainer management
+- **Cloudflare**: Tunnel for external access to Portainer interface
 
 ### Backups (backups)
 **Purpose**: Data protection and disaster recovery
@@ -172,11 +176,12 @@ Extended version of the official Gluetun VPN client.
 │   └── stacks/
 │       ├── ai/              # AI Services (LiteLLM, Whisper, etc.)
 │       ├── backups/         # Backup tools (Duplicati)
-│       ├── entrypoint/      # Infra (Cloudflare, Uptime Kuma)
+│       ├── maintenance/     # Infra (Cloudflare, Uptime Kuma)
 │       ├── homeassistant/   # Home Automation suite
 │       ├── mediaserver/     # Plex, Arr suite, VPN
 │       ├── n8n/             # N8N Automation
 │       ├── nginx/           # Nginx Proxy Manager
+│       ├── portainer/       # Portainer Access (Cloudflare)
 │       └── vpn/             # VPN Services (WireGuard)
 ├── README.md
 └── .gitignore
