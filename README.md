@@ -16,23 +16,23 @@ This homelab provides a complete self-hosted environment with:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Infrastructure │    │   AI Services   │    │   Media Server  │
-│    (entrypoint)  │    │      (ai)       │    │   (mediaserver) │
+│   Infrastructure │    │   VPN Services  │    │   Media Server  │
+│    (entrypoint)  │    │      (vpn)      │    │   (mediaserver) │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • Cloudflare    │    │ • LiteLLM        │    │ • Gluetun VPN   │
-│ • Cloudflare-DDNS│   │ • Faster-Whisper │    │ • qBittorrent   │
-│ • Uptime-Kuma   │    │ • Piper TTS      │    │ • Plex/Jellyfin │
-│ • WireGuard VPN │    │ • PostgreSQL     │    │ • *Arr Apps     │
+│ • Cloudflare    │    │ • WireGuard     │    │ • Gluetun VPN   │
+│ • Uptime-Kuma   │    │ • Cloudflare-DDNS│   │ • qBittorrent   │
+│ • Watchtower    │    │                 │    │ • Jellyfin      │
+│                 │    │                 │    │ • *Arr/Jellyseerr│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Home Automation │    │  N8N Automation │    │    Backups      │
-│ (homeassistant) │    │      (n8n)      │    │    (backups)    │
+│   AI Services   │    │ Home Automation │    │  N8N Automation │
+│      (ai)       │    │ (homeassistant) │    │      (n8n)      │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • Home Assistant│    │ • N8N           │    │ • Duplicati     │
-│ • Mosquitto     │    │ • MCP Proxy     │    │ • Portainer Backup
-│ • Zigbee2MQTT   │    │ • PostgreSQL    │    │                 │
-│ • Scrypted      │    │ • Cloudflare    │    │                 │
+│ • LiteLLM       │    │ • Home Assistant│    │ • N8N           │
+│ • Faster-Whisper│    │ • Mosquitto     │    │ • MCP Proxy     │
+│ • Piper TTS     │    │ • Scrypted      │    │ • PostgreSQL    │
+│ • PostgreSQL    │    │ • Zigbee2MQTT   │    │ • Cloudflare    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐
@@ -69,14 +69,13 @@ This homelab provides a complete self-hosted environment with:
 |---------|-------------|-----------------|
 | Gluetun | VPN client for secure torrenting | Internal only |
 | qBittorrent | BitTorrent client | Web UI via VPN |
-| Plex | Media streaming server | Direct access |
 | Jellyfin | Open source media server | Direct access |
 | Sonarr | TV show management | Internal |
 | Radarr | Movie management | Internal |
 | Prowlarr | Indexer management | Internal |
-| Overseerr | Media request management | Web UI |
+| Jellyseerr | Media request management | Web UI |
 | Bazarr | Subtitle management | Internal |
-| Tautulli | Plex monitoring and statistics | Web UI |
+| Unpackerr | Media extraction | Internal |
 
 ### AI Services (ai)
 **Purpose**: Language model proxy and speech processing
@@ -95,10 +94,16 @@ This homelab provides a complete self-hosted environment with:
 | Service | Description | External Access | Restart Policy |
 |---------|-------------|-----------------|----------------|
 | Cloudflare | Main tunnel for external access | - | unless-stopped |
-| Cloudflare-DDNS | Dynamic DNS updates | - | always |
 | Watchtower | Auto-update containers | - | always |
 | Uptime-Kuma | Service monitoring and alerts | Web UI | unless-stopped |
+
+### VPN Services (vpn)
+**Purpose**: Remote access and Dynamic DNS
+
+| Service | Description | External Access | Restart Policy |
+|---------|-------------|-----------------|----------------|
 | WireGuard | VPN server for remote access | VPN endpoint | unless-stopped |
+| Cloudflare-DDNS | Dynamic DNS updates | - | always |
 
 ### N8N Automation (n8n)
 **Purpose**: Workflow automation and integrations
@@ -171,7 +176,8 @@ Extended version of the official Gluetun VPN client.
 │       ├── homeassistant/   # Home Automation suite
 │       ├── mediaserver/     # Plex, Arr suite, VPN
 │       ├── n8n/             # N8N Automation
-│       └── nginx/           # Nginx Proxy Manager
+│       ├── nginx/           # Nginx Proxy Manager
+│       └── vpn/             # VPN Services (WireGuard)
 ├── README.md
 └── .gitignore
 ```

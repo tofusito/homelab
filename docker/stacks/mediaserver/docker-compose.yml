@@ -60,26 +60,6 @@ services:
       timeout: 10s
       retries: 3
 
-  
-  plex:
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-    image: lscr.io/linuxserver/plex:latest
-    pull_policy: always
-    container_name: plex
-    network_mode: host
-    devices:
-      - /dev/dri:/dev/dri
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - VERSION=docker
-    volumes:
-      - /home/tofu/docker/plex:/config
-      - /mnt/evo/MediaServer:/MediaServer
-    restart: unless-stopped
-
   jellyfin:
     labels:
       - com.centurylinklabs.watchtower.enable=true
@@ -98,22 +78,6 @@ services:
       - /mnt/evo/MediaServer:/MediaServer
     restart: unless-stopped
 
-  tautulli:
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-    image: ghcr.io/tautulli/tautulli:v2.15.1
-    container_name: tautulli
-    restart: unless-stopped
-    volumes:
-      -  /home/tofu/docker/tautulli:/config
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-    ports:
-      - 8181:8181
-    networks:
-      - mediaserver
 
   sonarr:
     labels:
@@ -201,6 +165,24 @@ services:
       - mediaserver         
     restart: unless-stopped
 
+  unpackerr:
+    image: golift/unpackerr:latest
+    container_name: unpackerr
+    volumes:
+      - /mnt/evo/Downloads:/Downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+      - UN_SONARR_0_URL=http://gluetun:8989
+      - UN_SONARR_0_API_KEY=${SONARR_API_KEY}
+      - UN_RADARR_0_URL=http://gluetun:7878
+      - UN_RADARR_0_API_KEY=${RADARR_API_KEY}
+    restart: unless-stopped
+    networks:
+      - mediaserver
+    depends_on:
+      - gluetun
 
   cloudflare:
     labels:
