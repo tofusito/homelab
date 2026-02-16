@@ -1,0 +1,20 @@
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      TZ: 'Europe/Madrid'
+      WEBPASSWORD: $PASSWORD
+      FTLCONF_LOCAL_IPV4: '192.168.31.106'
+      DNSMASQ_LISTENING: 'all'
+      PIHOLE_DNS_: '1.1.1.1;1.0.0.1'
+      WEB_PORT: '8053'
+      FTLCONF_webserver_port: '8053'
+      FTLCONF_dns_specialDomains_icloudPrivateRelay: "true"
+    volumes:
+      - /home/tofu/docker/pihole/etc-pihole:/etc/pihole
+      - /home/tofu/docker/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN

@@ -29,9 +29,11 @@ services:
 
   zigbee2mqtt:
     container_name: zigbee2mqtt
-    image: koenkk/zigbee2mqtt
+    image: koenkk/zigbee2mqtt:latest
     restart: unless-stopped
     network_mode: host
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     volumes:
       - /home/tofu/docker/homeassistant/complements/zigbee2mqtt/data:/app/data
       - /run/udev:/run/udev:ro

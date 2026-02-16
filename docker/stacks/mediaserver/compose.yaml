@@ -1,36 +1,29 @@
 services:
   gluetun:
-    image: gluetun-custom:latest
-    pull_policy: never
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    image: qmcgaw/gluetun:latest
+    pull_policy: always
     container_name: gluetun
     cap_add:
       - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      - LOG_LEVEL=debug
-      - VPN_SERVICE_PROVIDER=protonvpn
-      - VPN_PORT_FORWARDING=on
-      - PORT_FORWARD_ONLY=on
-      - SERVER_COUNTRIES=Spain
-      - OPENVPN_USER=$OPENVPN_USER
-      - OPENVPN_PASSWORD=$OPENVPN_PASSWORD
-      - PROTOCOL=udp
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Madrid
-      - VPN_PORT_FORWARDING_UP_COMMAND=python3 /gluetun/forward_port_torrent.py {{PORTS}}
-    volumes:
-      - /home/tofu/docker/gluetun:/gluetun
     ports:
-      - 7878:7878 # radarr
-      - 8888:8888 # qbittorrent
-      - 8989:8989 # sonarr
-      - 9696:9696 # prowlarr
+      - 8888:8888
+      - 8989:8989
+      - 7878:7878
+      - 9696:9696
       - 6881:6881
       - 6881:6881/udp
-      - 3000:3000
-      - 9091:9091
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=$OPENVPN_USER
+      - OPENVPN_PASSWORD=$OPENVPN_PASSWORD
+      - SERVER_COUNTRIES=Netherlands
+      - TZ=Europe/Madrid
+      - FREE_ONLY=on
+    volumes:
+      - /home/tofu/docker/gluetun:/gluetun
     restart: unless-stopped
     networks:
       - mediaserver

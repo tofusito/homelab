@@ -1,0 +1,31 @@
+services:
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    restart: unless-stopped
+    ports:
+      - 3001:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/tofu/docker/dockerhand/data:/app/data
+      - /home/tofu:/home/tofu
+    networks:
+      - dockhand
+
+  cloudflare-main:
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    container_name: cloudflare-main
+    image: cloudflare/cloudflared:latest
+    pull_policy: always
+    restart: unless-stopped
+    command: tunnel run
+    networks:
+      - dockhand
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+
+networks:
+  dockhand:
+    driver: bridge
+    name: dockhand
