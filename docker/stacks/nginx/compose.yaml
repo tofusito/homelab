@@ -8,7 +8,7 @@ services:
       - '443:443' # Public HTTPS Port
       - '40081:81' # Admin Web Port
     environment:
-      TZ: "Madrid/Spain"
+      TZ: "Europe/Madrid"
       DISABLE_IPV6: 'true'
     volumes:
       - /home/tofu/docker/nginxproxymanager/data:/data

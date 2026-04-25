@@ -5,9 +5,6 @@ services:
     pull_policy: always
     restart: unless-stopped
     network_mode: host
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
     environment:
       - TZ=Europe/Madrid
     volumes:
@@ -15,7 +12,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
     privileged: true
-
 
   mosquitto:
     container_name: mosquitto
@@ -32,8 +28,6 @@ services:
     image: koenkk/zigbee2mqtt:latest
     restart: unless-stopped
     network_mode: host
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     volumes:
       - /home/tofu/docker/homeassistant/complements/zigbee2mqtt/data:/app/data
       - /run/udev:/run/udev:ro
@@ -51,21 +45,30 @@ services:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     restart: unless-stopped
     network_mode: host
-    privileged: true # Recomendado mantenerlo para evitar problemas con mDNS
+    privileged: true
+    command: --storage-path /data --paa-root-cert-dir /data/credentials --primary-interface wlp1s0
     volumes:
       - /home/tofu/docker/homeassistant/complements/matter-server/data:/data
       - /run/dbus:/run/dbus:ro
+    labels:
+      - autoheal=true
+    healthcheck:
+      # Intenta abrir una conexión TCP al WebSocket de matter-server.
+      # Si el proceso está colgado, no acepta nuevas conexiones y falla.
+      test: ["CMD-SHELL", "python3 -c \"import socket,sys; s=socket.socket(); s.settimeout(5); s.connect(('127.0.0.1',5580)); s.close(); sys.exit(0)\" || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   matter-bridge:
     container_name: matter-bridge
     image: ghcr.io/t0bst4r/home-assistant-matter-hub:latest
     restart: unless-stopped
-    # Matter Bridge también se beneficia de la red host para publicidad
     network_mode: host
     environment:
-      # Si usas red host, localhost:8123 debería funcionar
       - HAMH_HOME_ASSISTANT_URL=http://localhost:8123
-      - HAMH_HOME_ASSISTANT_ACCESS_TOKEN=PON_AQUI_TU_TOKEN_DE_LARGA_DURACION
+      - HAMH_HOME_ASSISTANT_ACCESS_TOKEN=$LLT
       - LOG_LEVEL=info
     volumes:
       - /home/tofu/docker/homeassistant/complements/matter-bridge/data:/data
@@ -78,7 +81,7 @@ services:
     volumes:
       - /home/tofu/docker/homeassistant/complements/ring-mqtt/data:/data
     environment:
-      - MQTTHOST=mosquitto
+      - MQTTHOST=127.0.0.1
       - MQTTPORT=1883
       - MQTTUSER=
       - MQTTPASSWORD=
@@ -95,18 +98,23 @@ services:
     environment:
       - SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION=$SCRYPTED_TOKEN
       - NODE_OPTIONS=--dns-result-order=ipv4first
-
     devices:
       - /dev/dri:/dev/dri
     volumes:
       - /home/tofu/docker/scrypted/config:/server/volume
-      - /dev/dri:/dev/dri
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
+
+  autoheal:
+    container_name: autoheal
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=60
+      - AUTOHEAL_START_PERIOD=300
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   cloudflare:
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
     container_name: cloudflare-hass
     network_mode: host
     image: cloudflare/cloudflared:latest
@@ -114,9 +122,3 @@ services:
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=$TUNNEL_TOKEN
-
-
-networks:
-  homeassistant:
-    driver: bridge
-    name: homeassistant

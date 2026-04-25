@@ -1,0 +1,88 @@
+services:
+
+  docker-proxy:
+    container_name: openclaw-docker-proxy
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - POST=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - openclaw
+
+  openclaw-gateway:
+    container_name: openclaw-gateway
+    image: ghcr.io/openclaw/openclaw:latest
+    pull_policy: always
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:18789:18789"
+      - "127.0.0.1:18790:18790"
+    environment:
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TZ=${TZ:-Europe/Madrid}
+      - HOME=/home/node
+    volumes:
+      - config:/home/node/.openclaw
+      - workspace:/home/node/.openclaw/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:18789/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - openclaw
+
+  openclaw-cli:
+    container_name: openclaw-cli
+    image: ghcr.io/openclaw/openclaw:latest
+    pull_policy: always
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    depends_on:
+      openclaw-gateway:
+        condition: service_healthy
+    environment:
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_URL=http://openclaw-gateway:18789
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TZ=${TZ:-Europe/Madrid}
+      - HOME=/home/node
+      - TERM=xterm-256color
+      - BROWSER=echo
+      - DOCKER_HOST=tcp://openclaw-docker-proxy:2375
+    volumes:
+      - config:/home/node/.openclaw
+      - workspace:/home/node/.openclaw/workspace
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    networks:
+      - openclaw
+
+volumes:
+  config:
+    name: openclaw-config
+  workspace:
+    name: openclaw-workspace
+
+networks:
+  openclaw:
+    driver: bridge
+    name: openclaw

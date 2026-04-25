@@ -1,6 +1,6 @@
 services:
   kakei:
-    image: kakei:latest
+    image: kakei:refactor
     container_name: kakei
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/kakei
@@ -35,8 +35,6 @@ services:
       retries: 5
 
   cloudflare:
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
     container_name: cloudflare-kakei
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
