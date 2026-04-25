@@ -17,4 +17,3 @@ services:
 networks:
   portainer_bridge:
     external: true
-

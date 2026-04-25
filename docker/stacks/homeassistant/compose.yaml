@@ -13,7 +13,6 @@ services:
       - /run/dbus:/run/dbus:ro
     privileged: true
 
-
   mosquitto:
     container_name: mosquitto
     image: eclipse-mosquitto
