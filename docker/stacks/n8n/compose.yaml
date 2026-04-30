@@ -8,10 +8,8 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:5678:5678"
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
     environment:
-      - N8N_TRUST_PROXY=true
+      - N8N_PROXY_HOPS=1
       - N8N_TRUSTED_PROXIES=loopback,linklocal,uniquelocal,127.0.0.1/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - DB_SQLITE_POOL_SIZE=5
@@ -65,8 +63,6 @@ services:
 
 volumes:
   n8n_data:
-  traefik_data:
-  postgres_n8n_data:
 
 networks:
   n8n:

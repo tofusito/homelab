@@ -1,0 +1,22 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    pull_policy: always
+    container_name: tailscale
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_HOSTNAME=homelab
+      - TS_ACCEPT_DNS=false
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=192.168.31.0/24
+      - TS_DEBUG_FIREWALL_MODE=nftables
+    volumes:
+      - /home/tofu/docker/tailscale/state:/var/lib/tailscale
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun

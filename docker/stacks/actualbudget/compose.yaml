@@ -1,0 +1,55 @@
+services:
+  actual_server:
+    image: docker.io/actualbudget/actual-server:latest
+    restart: unless-stopped
+    container_name: actual_server
+    ports:
+      - '5006:5006'
+    networks:
+      - actualbudget
+    volumes:
+      - /home/tofu/docker/actualbudget/actual-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'node src/scripts/health-check.js']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  actual-api:
+    container_name: actual-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - actualbudget
+    environment:
+      - API_TOKEN=${ACTUAL_API_TOKEN}
+      - ACTUAL_SERVER_URL=http://actual_server:5006
+      - ACTUAL_PASSWORD=${ACTUAL_PASSWORD}
+      - ACTUAL_SYNC_ID=${ACTUAL_SYNC_ID}
+    depends_on:
+      actual_server:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3456/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  cloudflare:
+    container_name: cloudflare-actualbudget
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --protocol http2 run
+    networks:
+      - actualbudget
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - actual_server
+
+networks:
+  actualbudget:
+    driver: bridge

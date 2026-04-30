@@ -1,0 +1,25 @@
+services:
+  portfolio:
+    image: portfolio:20260426
+    container_name: portfolio
+    environment:
+        SITE_URL: ${SITE_URL:-https://me.tofusito.org}
+    ports:
+      - "3033:80"
+    restart: unless-stopped
+    networks:
+      - portfolio
+
+  cloudflare:
+    container_name: cloudflare-portfolio
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    networks:
+      - portfolio
+    environment:
+      - TUNNEL_TOKEN=$TUNNEL_TOKEN
+
+networks:
+  portfolio:
+    driver: bridge
