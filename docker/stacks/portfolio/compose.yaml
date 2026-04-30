@@ -1,6 +1,6 @@
 services:
   portfolio:
-    image: portfolio:20260422
+    image: portfolio:20260426
     container_name: portfolio
     environment:
       SITE_URL: ${SITE_URL:-https://me.tofusito.org}

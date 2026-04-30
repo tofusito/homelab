@@ -8,43 +8,57 @@ A self-hosted homelab powered by Docker and managed through [Dockhand](https://g
 
 This homelab provides a complete self-hosted environment with:
 - **Media Server Stack**: Automated media acquisition and streaming (Jellyfin, *Arr suite)
-- **Home Automation**: Home Assistant ecosystem with Zigbee, Matter, and MQTT
+- **Home Automation**: Home Assistant ecosystem with Zigbee, Matter, MQTT, and voice
 - **Workflow Automation**: N8N with MCP proxy integration
-- **Networking**: VPN, DNS ad-blocking, reverse proxy, Cloudflare tunnels
+- **Networking**: Tailscale, WireGuard, DNS ad-blocking, reverse proxy, Cloudflare tunnels
+- **Finance**: Actual Budget with custom REST API sidecar
+- **Development**: Self-hosted Git (Forgejo), personal portfolio
+- **AI Agents**: Hermes Telegram bot, OpenClaw coding assistant
 - **Security**: Non-root containers, VPN-secured torrenting, network isolation
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│    Dockhand      │    │   VPN Services  │    │   Media Server  │
-│   (dockhand)    │    │      (vpn)      │    │   (mediaserver) │
+│    Dockhand      │    │   Networking    │    │   Media Server  │
+│   (dockhand)    │    │  (vpn/tailscale)│    │   (mediaserver) │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
 │ • Dockhand UI   │    │ • WireGuard     │    │ • Gluetun VPN   │
-│ • Cloudflare    │    │ • Cloudflare-DDNS│   │ • qBittorrent   │
-│                 │    │                 │    │ • Jellyfin       │
-│                 │    │                 │    │ • *Arr/Jellyseerr│
+│ • Cloudflare    │    │ • Tailscale     │    │ • qBittorrent   │
+│                 │    │ • Cloudflare-DDNS│   │ • Jellyfin      │
+│                 │    │ • Pi-hole       │    │ • *Arr suite    │
+│                 │    │ • Nginx Proxy   │    │ • Jellyseerr    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   DNS / Proxy   │    │ Home Automation │    │  N8N Automation │
-│ (pihole / nginx)│    │ (homeassistant) │    │      (n8n)      │
+│ Home Automation │    │  N8N Automation │    │  Actual Budget  │
+│ (homeassistant) │    │      (n8n)      │    │ (actualbudget)  │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • Pi-hole       │    │ • Home Assistant│    │ • N8N           │
-│ • Nginx Proxy   │    │ • Mosquitto     │    │ • MCP Proxy     │
-│   Manager       │    │ • Zigbee2MQTT   │    │ • Cloudflare    │
-│                 │    │ • Matter Server │    │                 │
-│                 │    │ • Scrypted      │    │                 │
+│ • Home Assistant│    │ • N8N           │    │ • Actual Server │
+│ • Mosquitto     │    │ • MCP Proxy     │    │ • API Sidecar   │
+│ • Zigbee2MQTT   │    │ • Cloudflare    │    │ • Cloudflare    │
+│ • Matter Server │    │                 │    │                 │
+│ • Wyoming Voice │    │                 │    │                 │
+│ • Scrypted      │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
-┌─────────────────┐
-│      Kakei      │
-│     (kakei)     │
-├─────────────────┤
-│ • Kakei App     │
-│ • PostgreSQL    │
-│ • Cloudflare    │
-└─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│      Kakei      │    │    Forgejo      │    │   Portfolio     │
+│     (kakei)     │    │   (forgejo)     │    │  (portfolio)    │
+├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+│ • Kakei App     │    │ • Forgejo Git   │    │ • Portfolio App │
+│ • PostgreSQL    │    │ • Cloudflare    │    │ • Cloudflare    │
+│ • Cloudflare    │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+
+┌─────────────────┐    ┌─────────────────┐
+│    Hermes       │    │    OpenClaw     │
+│   (hermes)      │    │   (openclaw)    │
+├─────────────────┤    ├─────────────────┤
+│ • Hermes Agent  │    │ • Gateway       │
+│ • Docker Proxy  │    │ • CLI           │
+│                 │    │ • Docker Proxy  │
+└─────────────────┘    └─────────────────┘
 ```
 
 ## 📦 Stack Details
@@ -60,18 +74,18 @@ This homelab provides a complete self-hosted environment with:
 ### Media Server (`mediaserver`)
 **Purpose**: Automated media acquisition, management, and streaming
 
-| Service | Description | Access |
-|---------|-------------|--------|
-| Gluetun | VPN client for secure torrenting | Internal |
-| qBittorrent | BitTorrent client | Web UI via VPN |
-| Jellyfin | Open source media server | Host network |
-| Sonarr | TV show management | Via Gluetun |
-| Radarr | Movie management | Via Gluetun |
-| Prowlarr | Indexer management | Via Gluetun |
-| Jellyseerr | Media request management | Web UI |
-| Bazarr | Subtitle management | Web UI |
-| Unpackerr | Automated media extraction | Internal |
-| Cloudflare | Media tunnel | - |
+| Service | Description |
+|---------|-------------|
+| Gluetun | VPN client for secure torrenting |
+| qBittorrent | BitTorrent client (routed via Gluetun) |
+| Jellyfin | Open source media server |
+| Sonarr | TV show management |
+| Radarr | Movie management |
+| Prowlarr | Indexer management |
+| Jellyseerr | Media request management |
+| Bazarr | Subtitle management |
+| Unpackerr | Automated media extraction |
+| Cloudflare | Media tunnel |
 
 ### Home Automation (`homeassistant`)
 **Purpose**: Smart home hub and IoT management
@@ -84,7 +98,10 @@ This homelab provides a complete self-hosted environment with:
 | Matter Server | Matter protocol support |
 | Matter Bridge | Home Assistant Matter Hub |
 | Ring-MQTT | Ring integration via MQTT |
+| Speech-to-Phrase | Wyoming voice recognition |
+| Wyoming Piper | Text-to-speech (Spanish) |
 | Scrypted | Video security platform |
+| Autoheal | Automatic container restart on failure |
 | Cloudflare | HA tunnel for external access |
 
 ### N8N Automation (`n8n`)
@@ -96,12 +113,56 @@ This homelab provides a complete self-hosted environment with:
 | MCP Proxy | Model Context Protocol proxy for HA |
 | Cloudflare | Tunnel for external access |
 
-### Pi-hole (`pihole`)
-**Purpose**: Network-wide DNS ad-blocking
+### Actual Budget (`actualbudget`)
+**Purpose**: Personal finance tracking with API access
 
 | Service | Description |
 |---------|-------------|
-| Pi-hole | DNS sinkhole for ad-blocking |
+| Actual Server | Self-hosted budget application |
+| API Sidecar | Custom REST API for Shortcuts/automation |
+| Cloudflare | Tunnel for external access |
+
+### Kakei (`kakei`)
+**Purpose**: Personal finance tracking (Japanese-style kakeibo)
+
+| Service | Description |
+|---------|-------------|
+| Kakei | Finance tracking web app |
+| PostgreSQL | Database backend |
+| Cloudflare | Tunnel for external access |
+
+### Forgejo (`forgejo`)
+**Purpose**: Self-hosted Git service
+
+| Service | Description |
+|---------|-------------|
+| Forgejo | Lightweight self-hosted Git platform |
+| Cloudflare | Tunnel for external access |
+
+### Portfolio (`portfolio`)
+**Purpose**: Personal portfolio website
+
+| Service | Description |
+|---------|-------------|
+| Portfolio | Static site (custom Docker image) |
+| Cloudflare | Tunnel for external access |
+
+### Hermes (`hermes`)
+**Purpose**: AI agent accessible via Telegram
+
+| Service | Description |
+|---------|-------------|
+| Hermes | AI agent with Docker and HA integration |
+| Docker Proxy | Read-only Docker socket proxy |
+
+### OpenClaw (`openclaw`)
+**Purpose**: AI-powered coding assistant
+
+| Service | Description |
+|---------|-------------|
+| Gateway | OpenClaw backend service |
+| CLI | Interactive terminal client |
+| Docker Proxy | Read-only Docker socket proxy |
 
 ### VPN Services (`vpn`)
 **Purpose**: Remote access and dynamic DNS
@@ -111,21 +172,26 @@ This homelab provides a complete self-hosted environment with:
 | WireGuard | VPN server for remote access |
 | Cloudflare-DDNS | Dynamic DNS updates |
 
+### Tailscale (`tailscale`)
+**Purpose**: Mesh VPN and subnet router
+
+| Service | Description |
+|---------|-------------|
+| Tailscale | Mesh VPN with subnet routing (192.168.31.0/24) |
+
+### Pi-hole (`pihole`)
+**Purpose**: Network-wide DNS ad-blocking
+
+| Service | Description |
+|---------|-------------|
+| Pi-hole | DNS sinkhole for ad-blocking |
+
 ### Nginx Proxy Manager (`nginx`)
 **Purpose**: Reverse proxy and SSL management
 
 | Service | Description |
 |---------|-------------|
 | Nginx Proxy Manager | Reverse proxy with SSL |
-
-### Kakei (`kakei`)
-**Purpose**: Personal finance tracking
-
-| Service | Description |
-|---------|-------------|
-| Kakei | Finance tracking web app |
-| PostgreSQL | Database backend |
-| Cloudflare | Tunnel for external access |
 
 ## 🚀 Deployment
 
@@ -140,16 +206,21 @@ This homelab provides a complete self-hosted environment with:
 homelab/
 ├── docker/
 │   ├── images/              # Custom Docker images
-│   │   ├── gluetun/         # Custom Gluetun build
-│   │   └── portainer-backup/# Legacy backup tool
+│   │   └── gluetun/         # Custom Gluetun build
 │   └── stacks/
+│       ├── actualbudget/    # Actual Budget + API sidecar
 │       ├── dockhand/        # Stack management + main tunnel
+│       ├── forgejo/         # Self-hosted Git
+│       ├── hermes/          # Telegram AI agent
 │       ├── homeassistant/   # Home Automation suite
 │       ├── kakei/           # Personal finance app
 │       ├── mediaserver/     # Jellyfin, Arr suite, VPN
 │       ├── n8n/             # Workflow automation
 │       ├── nginx/           # Nginx Proxy Manager
+│       ├── openclaw/        # AI coding assistant
 │       ├── pihole/          # DNS ad-blocking
+│       ├── portfolio/       # Personal portfolio
+│       ├── tailscale/       # Mesh VPN
 │       └── vpn/             # WireGuard + DDNS
 ├── README.md
 └── .gitignore
@@ -167,9 +238,10 @@ homelab/
 - **Network isolation**: Docker bridge networks with inter-stack communication where needed
 - **Cloudflare tunnels**: Secure external access without exposing ports
 - **Secrets management**: `.env` files gitignored, `.env.example` with placeholders committed
-- **Health monitoring**: Health checks on critical services (Pi-hole, WireGuard, qBittorrent, N8N)
+- **Docker socket proxies**: Hermes and OpenClaw access Docker via read-only socket proxies
+- **Health monitoring**: Health checks on critical services (Pi-hole, WireGuard, qBittorrent, N8N, Actual Budget, Forgejo)
 
 ---
 
-**Last Updated**: February 2026
+**Last Updated**: April 2026
 **Maintainer**: Tofu

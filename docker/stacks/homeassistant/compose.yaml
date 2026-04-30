@@ -13,6 +13,35 @@ services:
       - /run/dbus:/run/dbus:ro
     privileged: true
 
+  speech-to-phrase:
+    container_name: speech-to-phrase
+    image: rhasspy/wyoming-speech-to-phrase
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/speech-to-phrase/models:/models
+      - /home/tofu/docker/homeassistant/complements/speech-to-phrase/train:/train
+    command: >
+      --uri tcp://0.0.0.0:10300
+      --models-dir /models
+      --train-dir /train
+      --hass-websocket-uri ws://localhost:8123/api/websocket
+      --hass-token $HASS_TOKEN
+      --retrain-on-start
+
+  wyoming-piper:
+    container_name: wyoming-piper
+    image: rhasspy/wyoming-piper
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      - /home/tofu/docker/homeassistant/complements/wyoming-piper/data:/data
+    command: --voice es_ES-sharvard-medium
+
   mosquitto:
     container_name: mosquitto
     image: eclipse-mosquitto
@@ -33,8 +62,6 @@ services:
       - /run/udev:/run/udev:ro
     environment:
       - TZ=Europe/Madrid
-    # PRECAUCIÓN: Verifica la ruta de tu dongle Zigbee.
-    # Puede ser /dev/ttyUSB0, /dev/ttyACM0, etc.
     devices:
       - /dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_e46a977c6a8eed119ad68354b96ce6f8-if00-port0:/dev/ttyUSB0
     depends_on:
@@ -53,8 +80,6 @@ services:
     labels:
       - autoheal=true
     healthcheck:
-      # Intenta abrir una conexión TCP al WebSocket de matter-server.
-      # Si el proceso está colgado, no acepta nuevas conexiones y falla.
       test: ["CMD-SHELL", "python3 -c \"import socket,sys; s=socket.socket(); s.settimeout(5); s.connect(('127.0.0.1',5580)); s.close(); sys.exit(0)\" || exit 1"]
       interval: 60s
       timeout: 10s
@@ -85,8 +110,6 @@ services:
       - MQTTPORT=1883
       - MQTTUSER=
       - MQTTPASSWORD=
-      # Si tienes token de refresco, descomenta y ponlo aquí, sino revisa logs
-      # - RINGTOKEN=tu_token_aqui
     depends_on:
       - mosquitto
 

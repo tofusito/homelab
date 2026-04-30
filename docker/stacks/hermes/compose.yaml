@@ -1,0 +1,76 @@
+services:
+  hermes-docker-proxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    container_name: hermes-docker-proxy
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - PING=1
+      - VERSION=1
+      - INFO=1
+      - EVENTS=1
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - ALLOW_START=1
+      - ALLOW_STOP=1
+      - ALLOW_RESTARTS=1
+      - POST=0
+      - BUILD=0
+      - COMMIT=0
+      - EXEC=0
+      - AUTH=0
+      - SECRETS=0
+      - CONFIGS=0
+      - SYSTEM=0
+      - SWARM=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - hermes
+
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+    command: gateway run
+    environment:
+      - TZ=${TZ:-Europe/Madrid}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
+      - GATEWAY_ALLOW_ALL_USERS=${GATEWAY_ALLOW_ALL_USERS:-false}
+      - KIMI_API_KEY=${KIMI_API_KEY:-}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-}
+      - DOCKER_HOST=tcp://hermes-docker-proxy:2375
+      - HA_URL=${HA_URL:-http://192.168.31.106:8123}
+      - HA_TOKEN=${HA_TOKEN:-}
+    volumes:
+      - ${HERMES_DATA_DIR}:/opt/data
+      - ${HERMES_VAULT_DIR}:/workspace/vault:rw
+      - /mnt/evo/MediaServer:/workspace/media/MediaServer:rw
+      - /mnt/evo/Downloads:/workspace/media/Downloads:rw
+    depends_on:
+      - hermes-docker-proxy
+    networks:
+      - hermes
+    mem_limit: 2g
+    cpus: 1.0
+    shm_size: 1g
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+networks:
+  hermes:
+    driver: bridge
+    name: hermes
