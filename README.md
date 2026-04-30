@@ -2,6 +2,8 @@
 
 A self-hosted homelab powered by Docker and managed through [Dockhand](https://github.com/FnSys/dockhand), featuring media services, home automation, workflow automation, and networking infrastructure.
 
+> **Public reference note**: This repository documents my personal setup and is shared as a practical reference, not as a plug-and-play distribution. Before reusing anything, replace every `.env` value, review exposed services, adjust domains/IPs/paths, and make your own security decisions for your network.
+
 ## 📋 Overview
 
 This homelab provides a complete self-hosted environment with:

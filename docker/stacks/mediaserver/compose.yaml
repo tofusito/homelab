@@ -72,7 +72,6 @@ services:
       - /mnt/evo:/data
     restart: unless-stopped
 
-
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     pull_policy: always
@@ -113,7 +112,6 @@ services:
     volumes:
       - /home/tofu/docker/prowlarr/data:/config
     restart: unless-stopped
-
 
   jellyseerr:
     image: ghcr.io/seerr-team/seerr:latest

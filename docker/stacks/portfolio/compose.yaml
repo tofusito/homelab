@@ -3,7 +3,7 @@ services:
     image: portfolio:20260426
     container_name: portfolio
     environment:
-        SITE_URL: ${SITE_URL:-https://me.tofusito.org}
+      SITE_URL: ${SITE_URL:-https://me.tofusito.org}
     ports:
       - "3033:80"
     restart: unless-stopped
