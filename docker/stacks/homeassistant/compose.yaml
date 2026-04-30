@@ -42,7 +42,6 @@ services:
       - /home/tofu/docker/homeassistant/complements/wyoming-piper/data:/data
     command: --voice es_ES-sharvard-medium
 
-
   mosquitto:
     container_name: mosquitto
     image: eclipse-mosquitto
